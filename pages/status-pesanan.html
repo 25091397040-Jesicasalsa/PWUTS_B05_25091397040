@@ -1,0 +1,134 @@
+<h2>Status Pesanan Saya</h2>
+
+<!-- BAGIAN A: Filter daftar pesanan -->
+<div class="filter">
+  <select id="filterStatus">
+    <option value="semua">Semua Pesanan</option>
+    <option value="berjalan">Sedang Berjalan</option>
+    <option value="selesai">Selesai</option>
+  </select>
+  <input type="text" id="cariKode" placeholder="Cari kode pesanan...">
+</div>
+
+<div class="status-layout">
+  <!-- BAGIAN B: Daftar pesanan (kiri) -->
+  <div id="daftarPesanan"></div>
+
+  <!-- BAGIAN C: Detail + timeline + simulasi (kanan) -->
+  <div id="detail" class="form-box" style="max-width:none">
+    <p>👈 Pilih salah satu pesanan untuk melihat statusnya.</p>
+  </div>
+</div>
+
+<script>
+  // 10 tahap status pesanan (sesuai proposal bagian 3.3)
+  var tahap = ["Ditahan", "Menunggu Keputusan", "Disetujui", "Menunggu Dibayar",
+    "Pembayaran Terkonfirmasi", "Siap Diserahkan", "Sedang Dipakai",
+    "Menunggu Dikembalikan", "Pengembalian Terkonfirmasi", "Selesai"];
+
+  // Data contoh pesanan (stand-in tabel `pesanan`)
+  var pesanan = [
+    { kode: "PSN-001", barang: "Kamera Mirrorless", mulai: "2026-11-01", selesai: "2026-11-05", jumlah: 1, total: 750000, t: 0 },
+    { kode: "PSN-002", barang: "Tenda Camping 4 Orang", mulai: "2026-11-10", selesai: "2026-11-12", jumlah: 2, total: 450000, t: 6 },
+    { kode: "PSN-003", barang: "Proyektor HD", mulai: "2026-10-20", selesai: "2026-10-22", jumlah: 1, total: 300000, t: 9 }
+  ];
+
+  var kodeAktif = null;   // pesanan yang sedang dibuka
+  var sisaDetik = 15 * 60; // simulasi penahanan 15 menit
+
+  function rupiah(n) { return "Rp " + n.toLocaleString("id-ID"); }
+  function cariPesanan(kode) {
+    var hasil = null;
+    $.each(pesanan, function (i, p) { if (p.kode === kode) hasil = p; });
+    return hasil;
+  }
+
+  // BAGIAN B: tampilkan daftar sesuai filter
+  function tampilDaftar() {
+    var f = $("#filterStatus").val(), kata = $("#cariKode").val().toUpperCase(), html = "";
+    $.each(pesanan, function (i, p) {
+      var selesai = p.t === 9;
+      if (f === "berjalan" && selesai) return;
+      if (f === "selesai" && !selesai) return;
+      if (p.kode.indexOf(kata) === -1) return;
+      html += '<div class="item-pesanan' + (p.kode === kodeAktif ? ' aktif' : '') + '" data-kode="' + p.kode + '">' +
+        '<b>' + p.kode + '</b><br>' + p.barang + '<br>' +
+        '<span class="badge' + (selesai ? ' selesai' : '') + '">' + tahap[p.t] + '</span></div>';
+    });
+    $("#daftarPesanan").html(html || "<p>Tidak ada pesanan.</p>");
+  }
+
+  // BAGIAN C: tampilkan detail pesanan + timeline
+  function tampilDetail() {
+    var p = cariPesanan(kodeAktif);
+    if (!p) return;
+    var persen = Math.round(p.t / 9 * 100);
+    var tl = "";
+    $.each(tahap, function (i, nama) {
+      var kelas = i < p.t ? "selesai" : (i === p.t ? "sekarang" : "");
+      tl += '<li class="' + kelas + '">' + nama + '</li>';
+    });
+
+    var html = '<h3>' + p.kode + ' - ' + p.barang + '</h3>' +
+      '<p>' + p.mulai + ' s/d ' + p.selesai + ' | ' + p.jumlah + ' unit | <b>' + rupiah(p.total) + '</b></p>' +
+      '<div class="progress"><div style="width:' + persen + '%"></div></div>' +
+      '<ul class="timeline">' + tl + '</ul>';
+
+    if (p.t === 0) {
+      html += '<div class="info">Unit sedang ditahan. Sisa waktu: <span class="timer" id="timer"></span></div>';
+    }
+    if (p.t < 9) {
+      html += '<button class="btn btn-biru" id="btnLanjut">Simulasi: Lanjut ke Tahap Berikutnya</button> ';
+    } else {
+      html += '<p class="ok">🎉 Penyewaan selesai. Unit sudah tersedia kembali.</p>';
+    }
+    html += '<button class="btn" id="btnReset">Reset</button>';
+    $("#detail").html(html);
+    tampilTimer();
+  }
+
+  function tampilTimer() {
+    var m = Math.floor(sisaDetik / 60), s = sisaDetik % 60;
+    $("#timer").text(("0" + m).slice(-2) + ":" + ("0" + s).slice(-2));
+  }
+
+  // Hitung mundur penahanan (berhenti sendiri jika halaman diganti)
+  var pewaktu = setInterval(function () {
+    if (!$("#daftarPesanan").length) { clearInterval(pewaktu); return; }
+    var p = cariPesanan(kodeAktif);
+    if (p && p.t === 0 && sisaDetik > 0) {
+      sisaDetik--;
+      tampilTimer();
+      if (sisaDetik === 0) {
+        $("#timer").text("Kedaluwarsa - unit dilepas");
+      }
+    }
+  }, 1000);
+
+  // Event
+  $("#filterStatus").on("change", tampilDaftar);
+  $("#cariKode").on("keyup", tampilDaftar);
+
+  $("#daftarPesanan").on("click", ".item-pesanan", function () {
+    kodeAktif = $(this).data("kode");
+    sisaDetik = 15 * 60;
+    tampilDaftar();
+    tampilDetail();
+  });
+
+  $("#detail").on("click", "#btnLanjut", function () {
+    var p = cariPesanan(kodeAktif);
+    if (p.t < 9) p.t++;
+    tampilDaftar();
+    tampilDetail();
+  });
+
+  $("#detail").on("click", "#btnReset", function () {
+    cariPesanan(kodeAktif).t = 0;
+    sisaDetik = 15 * 60;
+    tampilDaftar();
+    tampilDetail();
+  });
+
+  tampilDaftar();
+</script>
