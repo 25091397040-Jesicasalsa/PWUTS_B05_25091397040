@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SewaIn - Website Penyewaan Barang</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- BAGIAN 1: HEADER + MENU NAVIGASI -->
+  <header class="header">
+    <div class="container header-inner">
+      <a href="#" class="logo" data-page="pages/beranda.html">
+        <img src="images/logo.svg" alt="Logo SewaIn"> SewaIn
+      </a>
+      <button id="btnMenu" class="btn-menu">☰</button>
+      <nav id="nav">
+        <a href="#" data-page="pages/beranda.html" class="active">Beranda</a>
+        <a href="#" data-page="pages/status-pesanan.html">Status Pesanan</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- BAGIAN 2: AREA KONTEN (diisi lewat Ajax) -->
+  <main class="container">
+    <div id="konten"></div>
+  </main>
+
+  <!-- BAGIAN 3: FOOTER -->
+  <footer>&copy; 2026 SewaIn - PWL Kelompok Penyewaan Barang, UNESA</footer>
+
+  <!-- BAGIAN 4: JAVASCRIPT -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
